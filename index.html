@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d1a">
+  <title>Guess the Logo</title>
+  <style>
+    :root {
+      --text: #f8fafc;
+      --muted: #dbeafe;
+      --panel: rgba(7, 13, 30, .9);
+      --yellow: #facc15;
+      --green: #34d399;
+      --red: #fb7185;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      background: #020617;
+      font-family: Inter, Montserrat, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .background-video {
+      position: fixed;
+      z-index: -2;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      filter: saturate(1.05);
+    }
+
+    .scrim {
+      position: fixed;
+      z-index: -1;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(2, 6, 23, .65), rgba(2, 6, 23, .9));
+    }
+
+    .app {
+      display: grid;
+      min-height: 100vh;
+      padding: clamp(1rem, 4vw, 4rem);
+      place-items: center;
+    }
+
+    .game-card {
+      width: min(100%, 920px);
+      padding: clamp(1.25rem, 4vw, 3.5rem);
+      border: 1px solid rgba(255, 255, 255, .17);
+      border-radius: 2rem;
+      background: var(--panel);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .4);
+      text-align: center;
+    }
+
+    .view { width: min(100%, 920px); }
+    .view-card { text-align: center; }
+    .color-video { display: block; width: 100%; max-height: 58vh; margin: 1rem auto 0; border-radius: 1rem; background: #000; }
+
+    .eyebrow {
+      margin-bottom: .5rem;
+      color: var(--yellow);
+      font-size: clamp(.75rem, 1.7vw, 1rem);
+      font-weight: 900;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1, h2 { margin: 0 0 1.25rem; line-height: 1.05; letter-spacing: -.04em; }
+    h1 { font-size: clamp(2.2rem, 7vw, 5.8rem); }
+    h2 { font-size: clamp(1.8rem, 5vw, 4rem); }
+    p { color: var(--muted); font-size: clamp(1rem, 2.2vw, 1.45rem); line-height: 1.5; }
+
+    .timer-label {
+      color: var(--muted);
+      font-size: clamp(.8rem, 1.6vw, 1.05rem);
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .prompt-label {
+      margin: 1.25rem 0 .5rem;
+      color: var(--yellow);
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .timer {
+      margin: .25rem 0 1.25rem;
+      color: var(--yellow);
+      font-size: clamp(4rem, 14vw, 8rem);
+      font-variant-numeric: tabular-nums;
+      font-weight: 950;
+      line-height: .95;
+    }
+
+    .timer.warning { color: var(--red); animation: pulse .6s infinite alternate; }
+    @keyframes pulse { to { transform: scale(1.07); } }
+
+    .logo-frame {
+      display: grid;
+      min-height: 220px;
+      margin: 1rem auto 1.5rem;
+      padding: 1rem;
+      border-radius: 1.5rem;
+      background: #f8fafc;
+      place-items: center;
+    }
+
+    .logo-frame img {
+      display: block;
+      width: min(100%, 400px);
+      max-height: 260px;
+      object-fit: contain;
+    }
+
+    .message {
+      min-height: 2.2rem;
+      margin: 1rem 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.3rem);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: .8rem;
+      margin-top: 1.25rem;
+    }
+
+    button {
+      min-width: 8rem;
+      min-height: 3.25rem;
+      padding: .8rem 1.4rem;
+      border: 0;
+      border-radius: 999px;
+      color: #111827;
+      background: var(--yellow);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 900;
+      transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+    }
+
+    button:hover, button:focus-visible {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(250, 204, 21, .25);
+      outline: 0;
+    }
+
+    button.success { background: var(--green); }
+    button.danger { color: #fff; background: var(--red); }
+    button.neutral { color: var(--text); background: rgba(255, 255, 255, .14); }
+
+    .video-area { width: min(100%, 760px); margin: 1.5rem auto 0; }
+    .video-area video { display: block; width: 100%; max-height: 52vh; border-radius: 1rem; background: #000; }
+
+    /* Reward Modal Popup */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(1rem, 3vw, 2.5rem);
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      animation: modalFade .25s ease-out;
+    }
+
+    .modal-dialog {
+      position: relative;
+      width: min(100%, 740px);
+      padding: clamp(1.5rem, 4vw, 2.8rem);
+      background: var(--panel, rgba(7, 13, 30, .95));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 2rem;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, 0.65);
+      text-align: center;
+      animation: modalPop .3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-dialog h3 {
+      margin: 0 0 1.25rem;
+      color: var(--yellow, #facc15);
+      font-size: clamp(1.5rem, 4vw, 2.4rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .modal-dialog video {
+      display: block;
+      width: 100%;
+      max-height: 54vh;
+      border-radius: 1.25rem;
+      background: #000;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-dialog .close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1.2rem;
+      width: 2.4rem;
+      height: 2.4rem;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: 1.4rem;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .modal-dialog .close-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(1.08);
+    }
+
+    @keyframes modalFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.9) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .reward-canvas {
+      display: block;
+      margin: 0.5rem auto 1.25rem;
+      max-width: 100%;
+      max-height: 50vh;
+      object-fit: contain;
+      background: transparent;
+      filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.55));
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 600px) {
+      .game-card { border-radius: 1.25rem; }
+      .button-row { flex-direction: column; align-items: stretch; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <video class="background-video" src="MEDIA/BACKGROUND.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
+  <div class="scrim" aria-hidden="true"></div>
+
+  <main class="app">
+    <!-- Page 1: Welcome -->
+    <section class="game-card view view-card" id="page-1" aria-live="polite">
+      <div class="eyebrow">Class Energizer</div>
+      <h1>Good afternoon, everyone!</h1>
+      <p>Let’s have a quick energizer to boost our energy.</p>
+      <div class="button-row"><button type="button" id="start-page-2">Let’s start!</button></div>
+    </section>
+
+    <!-- Page 2: Visual Energizer Video -->
+    <section class="game-card view view-card" id="page-2" aria-live="polite" hidden>
+      <div class="eyebrow">Page 2</div>
+      <h2>Get ready for the challenge</h2>
+      <p>Play the visual energizer when you are ready. It will not start automatically.</p>
+      <video class="color-video" id="color-video" src="MEDIA/COLOR.mp4" controls preload="metadata" playsinline></video>
+      <div class="button-row">
+        <button type="button" class="neutral" id="back-page-1">Back</button>
+        <button type="button" id="continue-page-5">Continue</button>
+      </div>
+    </section>
+
+    <!-- Page 5: Evelyn Logo Challenge Round -->
+    <section class="game-card view" id="game-page" aria-live="polite" hidden>
+      <div class="eyebrow">Logo Challenge</div>
+      <h2>Guess the Logo</h2>
+
+      <div id="timer-panel">
+        <div class="timer-label">Time remaining</div>
+        <div class="timer" id="timer">30</div>
+      </div>
+
+      <div class="logo-frame icon-container">
+        <img id="logo" src="MEDIA/evelyn 2.jpe" alt="Mystery logo">
+      </div>
+
+      <div class="button-row" id="timer-actions">
+        <button type="button" class="neutral" id="skip-timer">Skip Timer</button>
+      </div>
+
+      <div class="prompt-label" id="reveal-prompt" hidden>Show answer?</div>
+
+      <div class="button-row" id="reveal-actions" hidden>
+        <button type="button" id="reveal-yes">Yes</button>
+        <button type="button" class="neutral" id="reveal-no">No</button>
+      </div>
+
+      <div class="button-row" id="answer-actions" hidden>
+        <button type="button" class="success" id="right">Right</button>
+        <button type="button" class="danger" id="wrong">Wrong</button>
+        <button type="button" class="neutral" id="skip">Skip</button>
+      </div>
+
+      <div class="button-row" id="wrong-actions" hidden>
+        <button type="button" class="danger" id="punishment">Punishment</button>
+        <button type="button" class="neutral" id="wrong-skip">Skip</button>
+      </div>
+
+      <!-- Page 5 Reward Popup Modal -->
+      <div id="reward-area" class="modal-overlay" hidden aria-modal="true" role="dialog" aria-labelledby="reward-title">
+        <div class="modal-dialog">
+          <button type="button" class="close-btn" id="reward-close" aria-label="Close">×</button>
+          <h3 id="reward-title">🎉 Correct! Awesome job!</h3>
+          <video id="reward-video" src="MEDIA/wow.mp4" playsinline preload="auto" loop style="display: none;"></video>
+          <canvas id="reward-canvas" class="reward-canvas"></canvas>
+          <div class="button-row">
+            <button type="button" class="next" id="reward-next">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="video-area" id="punishment-area" hidden>
+        <video id="punishment-video" controls preload="metadata" playsinline></video>
+        <div class="button-row">
+          <button type="button" class="next" id="punishment-next">Next</button>
+          <button type="button" class="neutral" id="repeat-round">Repeat</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Page 6: LETGO Logo Challenge Round -->
+    <section class="game-card view" id="letgo-page" aria-live="polite" hidden>
+      <div class="eyebrow">LETGO Logo Challenge</div>
+      <h2>Guess the Logo</h2>
+
+      <div id="letgo-timer-panel">
+        <div class="timer-label">Time remaining</div>
+        <div class="timer" id="letgo-timer">30</div>
+      </div>
+
+      <div class="logo-frame icon-container">
+        <img id="letgo-logo" src="MEDIA/LETGO2.png" alt="Mystery logo" onerror="if (this.src.endsWith('.png')) this.src = this.src.replace('.png', '.jpe');">
+      </div>
+
+      <div class="button-row" id="letgo-timer-actions">
+        <button type="button" class="neutral" id="letgo-skip-timer">Skip Timer</button>
+      </div>
+
+      <div class="prompt-label" id="letgo-reveal-prompt" hidden>Show answer?</div>
+
+      <div class="button-row" id="letgo-reveal-actions" hidden>
+        <button type="button" id="letgo-reveal-yes">Yes</button>
+        <button type="button" class="neutral" id="letgo-reveal-no">No</button>
+      </div>
+
+      <div class="button-row" id="letgo-answer-actions" hidden>
+        <button type="button" class="success" id="letgo-right">Right</button>
+        <button type="button" class="danger" id="letgo-wrong">Wrong</button>
+        <button type="button" class="neutral" id="letgo-skip">Skip</button>
+      </div>
+
+      <div class="button-row" id="letgo-wrong-actions" hidden>
+        <button type="button" class="danger" id="letgo-punishment">Punishment</button>
+        <button type="button" class="neutral" id="letgo-wrong-skip">Skip</button>
+      </div>
+
+      <!-- Page 6 Reward Popup Modal -->
+      <div id="letgo-reward-area" class="modal-overlay" hidden aria-modal="true" role="dialog" aria-labelledby="letgo-reward-title">
+        <div class="modal-dialog">
+          <button type="button" class="close-btn" id="letgo-reward-close" aria-label="Close">×</button>
+          <h3 id="letgo-reward-title">🎉 Correct! Awesome job!</h3>
+          <video id="letgo-reward-video" src="MEDIA/wow.mp4" playsinline preload="auto" loop style="display: none;"></video>
+          <canvas id="letgo-reward-canvas" class="reward-canvas"></canvas>
+          <div class="button-row">
+            <button type="button" class="next" id="letgo-reward-next">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="video-area" id="letgo-punishment-area" hidden>
+        <video id="letgo-punishment-video" controls preload="metadata" playsinline></video>
+        <div class="button-row">
+          <button type="button" class="next" id="letgo-punishment-next">Next</button>
+          <button type="button" class="neutral" id="letgo-repeat-round">Repeat</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Completion View -->
+    <section class="game-card view view-card" id="finish-page" aria-live="polite" hidden>
+      <div class="eyebrow">Challenge complete</div>
+      <h2>Great job, everyone!</h2>
+      <p>Thank you for bringing your energy and teamwork to the game.</p>
+      <div class="button-row"><button type="button" id="play-again">Play again</button></div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      // Asset constants
+      const EVELYN_INITIAL = 'MEDIA/evelyn 2.jpe';
+      const EVELYN_REVEALED = 'MEDIA/evelyn1.jpe';
+      const LETGO_INITIAL = 'MEDIA/LETGO2.png';
+      const LETGO_REVEALED = 'MEDIA/LETGO1.png';
+      const punishments = Array.from({ length: 13 }, (_, i) => `MEDIA/PUNISHMENT${i + 1}.mp4`);
+
+      // View containers
+      const page1 = document.getElementById('page-1');
+      const page2 = document.getElementById('page-2');
+      const gamePage = document.getElementById('game-page');
+      const letgoPage = document.getElementById('letgo-page');
+      const finishPage = document.getElementById('finish-page');
+      const colorVideo = document.getElementById('color-video');
+
+      // Page 5 Elements
+      const timerPanel = document.getElementById('timer-panel');
+      const timer = document.getElementById('timer');
+      const logo = document.getElementById('logo');
+      const timerActions = document.getElementById('timer-actions');
+      const skipTimer = document.getElementById('skip-timer');
+      const revealPrompt = document.getElementById('reveal-prompt');
+      const revealActions = document.getElementById('reveal-actions');
+      const revealYes = document.getElementById('reveal-yes');
+      const revealNo = document.getElementById('reveal-no');
+      const answerActions = document.getElementById('answer-actions');
+      const rightBtn = document.getElementById('right');
+      const wrongBtn = document.getElementById('wrong');
+      const skipBtn = document.getElementById('skip');
+      const wrongActions = document.getElementById('wrong-actions');
+      const punishmentBtn = document.getElementById('punishment');
+      const wrongSkipBtn = document.getElementById('wrong-skip');
+      const rewardArea = document.getElementById('reward-area');
+      const rewardVideo = document.getElementById('reward-video');
+      const rewardCanvas = document.getElementById('reward-canvas');
+      const rewardNext = document.getElementById('reward-next');
+      const punishmentArea = document.getElementById('punishment-area');
+      const punishmentVideo = document.getElementById('punishment-video');
+      const punishmentNext = document.getElementById('punishment-next');
+
+      // Page 6 Elements
+      const letgoTimerPanel = document.getElementById('letgo-timer-panel');
+      const letgoTimer = document.getElementById('letgo-timer');
+      const letgoLogo = document.getElementById('letgo-logo');
+      const letgoTimerActions = document.getElementById('letgo-timer-actions');
+      const letgoSkipTimer = document.getElementById('letgo-skip-timer');
+      const letgoRevealPrompt = document.getElementById('letgo-reveal-prompt');
+      const letgoRevealActions = document.getElementById('letgo-reveal-actions');
+      const letgoRevealYes = document.getElementById('letgo-reveal-yes');
+      const letgoRevealNo = document.getElementById('letgo-reveal-no');
+      const letgoAnswerActions = document.getElementById('letgo-answer-actions');
+      const letgoRightBtn = document.getElementById('letgo-right');
+      const letgoWrongBtn = document.getElementById('letgo-wrong');
+      const letgoSkipBtn = document.getElementById('letgo-skip');
+      const letgoWrongActions = document.getElementById('letgo-wrong-actions');
+      const letgoPunishmentBtn = document.getElementById('letgo-punishment');
+      const letgoWrongSkipBtn = document.getElementById('letgo-wrong-skip');
+      const letgoRewardArea = document.getElementById('letgo-reward-area');
+      const letgoRewardVideo = document.getElementById('letgo-reward-video');
+      const letgoRewardCanvas = document.getElementById('letgo-reward-canvas');
+      const letgoRewardNext = document.getElementById('letgo-reward-next');
+      const letgoPunishmentArea = document.getElementById('letgo-punishment-area');
+      const letgoPunishmentVideo = document.getElementById('letgo-punishment-video');
+      const letgoPunishmentNext = document.getElementById('letgo-punishment-next');
+
+      // Navigation Buttons
+      const startPage2 = document.getElementById('start-page-2');
+      const backPage1 = document.getElementById('back-page-1');
+      const continuePage5 = document.getElementById('continue-page-5');
+      const playAgain = document.getElementById('play-again');
+
+      let timerId = null;
+      let letgoTimerId = null;
+
+      function stopAllMedia() {
+        if (colorVideo) colorVideo.pause();
+        if (rewardVideo) rewardVideo.pause();
+        if (punishmentVideo) punishmentVideo.pause();
+        if (letgoRewardVideo) letgoRewardVideo.pause();
+        if (letgoPunishmentVideo) letgoPunishmentVideo.pause();
+      }
+
+      function showView(view) {
+        clearInterval(timerId);
+        clearInterval(letgoTimerId);
+        stopAllMedia();
+
+        page1.hidden = (view !== page1);
+        page2.hidden = (view !== page2);
+        gamePage.hidden = (view !== gamePage);
+        letgoPage.hidden = (view !== letgoPage);
+        finishPage.hidden = (view !== finishPage);
+
+        if (view === gamePage) {
+          startRound();
+        } else if (view === letgoPage) {
+          startLetgoRound();
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // ================= PAGE 5 LOGIC (EVELYN ROUND) =================
+      function hidePage5Choices() {
+        revealActions.hidden = true;
+        answerActions.hidden = true;
+        wrongActions.hidden = true;
+      }
+
+      function startRound() {
+        clearInterval(timerId);
+        let timeLeft = 30;
+        timer.textContent = timeLeft;
+        timer.classList.remove('warning');
+        timerPanel.hidden = false;
+        timerActions.hidden = false;
+        revealPrompt.hidden = true;
+        logo.src = EVELYN_INITIAL;
+        logo.alt = 'Mystery logo';
+        rewardArea.hidden = true;
+        punishmentArea.hidden = true;
+        hidePage5Choices();
+        rewardVideo.removeAttribute('src');
+        punishmentVideo.removeAttribute('src');
+
+        timerId = setInterval(() => {
+          timeLeft -= 1;
+          timer.textContent = timeLeft;
+          if (timeLeft <= 5) timer.classList.add('warning');
+          if (timeLeft <= 0) {
+            clearInterval(timerId);
+            promptReveal();
+          }
+        }, 1000);
+      }
+
+      function promptReveal() {
+        clearInterval(timerId);
+        timerPanel.hidden = true;
+        timerActions.hidden = true;
+        revealPrompt.hidden = false;
+        revealActions.hidden = false;
+      }
+
+      function showAnswerChoices() {
+        revealActions.hidden = true;
+        revealPrompt.hidden = true;
+        answerActions.hidden = false;
+      }
+
+      skipTimer.addEventListener('click', promptReveal);
+
+      revealYes.addEventListener('click', () => {
+        logo.src = EVELYN_REVEALED;
+        logo.alt = 'Revealed logo';
+        showAnswerChoices();
+      });
+
+      revealNo.addEventListener('click', () => {
+        logo.src = EVELYN_INITIAL;
+        logo.alt = 'Mystery logo';
+        showAnswerChoices();
+      });
+
+      function initChromaKey(video, canvas) {
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        let animId = null;
+
+        function processFrame() {
+          if (video.paused || video.ended) return;
+
+          if (video.videoWidth && video.videoHeight) {
+            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+            }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            try {
+              const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const d = frame.data;
+              const len = d.length;
+              const w = canvas.width;
+
+              for (let i = 0; i < len; i += 4) {
+                const r = d[i];
+                const g = d[i + 1];
+                const b = d[i + 2];
+                const pixelIdx = i / 4;
+                const x = pixelIdx % w;
+
+                // Remove black pillarbox margins on outer left and right sides
+                if ((x < w * 0.28 || x > w * 0.72) && r < 24 && g < 24 && b < 24) {
+                  d[i + 3] = 0;
+                  continue;
+                }
+
+                // Chroma key green removal
+                if (g > 65 && g > r * 1.18 && g > b * 1.15) {
+                  const maxOther = Math.max(r, b);
+                  const diff = g - maxOther;
+                  if (diff > 35) {
+                    d[i + 3] = 0; // Fully transparent
+                  } else if (diff > 12) {
+                    // Feather boundary
+                    const factor = 1 - (diff - 12) / 23;
+                    d[i + 3] = Math.round(d[i + 3] * factor);
+                    d[i + 1] = maxOther; // Green spill suppression
+                  }
+                }
+              }
+
+              ctx.putImageData(frame, 0, 0);
+            } catch (err) {
+              video.style.display = 'block';
+              canvas.style.display = 'none';
+              return;
+            }
+          }
+
+          animId = requestAnimationFrame(processFrame);
+        }
+
+        video.addEventListener('play', () => {
+          cancelAnimationFrame(animId);
+          animId = requestAnimationFrame(processFrame);
+        });
+
+        video.addEventListener('pause', () => {
+          cancelAnimationFrame(animId);
+        });
+      }
+
+      initChromaKey(rewardVideo, rewardCanvas);
+      initChromaKey(letgoRewardVideo, letgoRewardCanvas);
+
+      function playRewardPopup(video, canvas, area) {
+        area.hidden = false;
+        video.src = 'MEDIA/wow.mp4';
+        video.currentTime = 0;
+        video.loop = true;
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // If browser blocks unmuted audio autoplay, fallback to muted autoplay
+            video.muted = true;
+            video.play();
+          });
+        }
+      }
+
+      rightBtn.addEventListener('click', () => {
+        hidePage5Choices();
+        playRewardPopup(rewardVideo, rewardCanvas, rewardArea);
+      });
+
+      wrongBtn.addEventListener('click', () => {
+        answerActions.hidden = true;
+        wrongActions.hidden = false;
+      });
+
+      punishmentBtn.addEventListener('click', () => {
+        wrongActions.hidden = true;
+        const selected = punishments[Math.floor(Math.random() * punishments.length)];
+        punishmentVideo.src = selected;
+        punishmentVideo.load();
+        punishmentArea.hidden = false;
+      });
+
+      function advanceToPage6() {
+        clearInterval(timerId);
+        rewardArea.hidden = true;
+        punishmentArea.hidden = true;
+        hidePage5Choices();
+        stopAllMedia();
+        showView(letgoPage);
+      }
+
+      skipBtn.addEventListener('click', advanceToPage6);
+      wrongSkipBtn.addEventListener('click', advanceToPage6);
+      rewardNext.addEventListener('click', advanceToPage6);
+      punishmentNext.addEventListener('click', advanceToPage6);
+      document.getElementById('repeat-round').addEventListener('click', () => startRound());
+      document.getElementById('reward-close').addEventListener('click', () => {
+        rewardVideo.pause();
+        rewardArea.hidden = true;
+      });
+      rewardArea.addEventListener('click', event => {
+        if (event.target === rewardArea) {
+          rewardVideo.pause();
+          rewardArea.hidden = true;
+        }
+      });
+
+      // ================= PAGE 6 LOGIC (LETGO ROUND) =================
+      function hideLetgoChoices() {
+        letgoRevealActions.hidden = true;
+        letgoAnswerActions.hidden = true;
+        letgoWrongActions.hidden = true;
+      }
+
+      function startLetgoRound() {
+        clearInterval(letgoTimerId);
+        let timeLeft = 30;
+        letgoTimer.textContent = timeLeft;
+        letgoTimer.classList.remove('warning');
+        letgoTimerPanel.hidden = false;
+        letgoTimerActions.hidden = false;
+        letgoRevealPrompt.hidden = true;
+        letgoLogo.src = LETGO_INITIAL;
+        letgoLogo.alt = 'Mystery logo';
+        letgoRewardArea.hidden = true;
+        letgoPunishmentArea.hidden = true;
+        hideLetgoChoices();
+        letgoRewardVideo.removeAttribute('src');
+        letgoPunishmentVideo.removeAttribute('src');
+
+        letgoTimerId = setInterval(() => {
+          timeLeft -= 1;
+          letgoTimer.textContent = timeLeft;
+          if (timeLeft <= 5) letgoTimer.classList.add('warning');
+          if (timeLeft <= 0) {
+            clearInterval(letgoTimerId);
+            promptLetgoReveal();
+          }
+        }, 1000);
+      }
+
+      function promptLetgoReveal() {
+        clearInterval(letgoTimerId);
+        letgoTimerPanel.hidden = true;
+        letgoTimerActions.hidden = true;
+        letgoRevealPrompt.hidden = false;
+        letgoRevealActions.hidden = false;
+      }
+
+      function showLetgoAnswerChoices() {
+        letgoRevealActions.hidden = true;
+        letgoRevealPrompt.hidden = true;
+        letgoAnswerActions.hidden = false;
+      }
+
+      letgoSkipTimer.addEventListener('click', promptLetgoReveal);
+
+      letgoRevealYes.addEventListener('click', () => {
+        letgoLogo.src = LETGO_REVEALED;
+        letgoLogo.alt = 'Revealed logo';
+        showLetgoAnswerChoices();
+      });
+
+      letgoRevealNo.addEventListener('click', () => {
+        letgoLogo.src = LETGO_INITIAL;
+        letgoLogo.alt = 'Mystery logo';
+        showLetgoAnswerChoices();
+      });
+
+      letgoRightBtn.addEventListener('click', () => {
+        hideLetgoChoices();
+        playRewardPopup(letgoRewardVideo, letgoRewardCanvas, letgoRewardArea);
+      });
+
+      letgoWrongBtn.addEventListener('click', () => {
+        letgoAnswerActions.hidden = true;
+        letgoWrongActions.hidden = false;
+      });
+
+      letgoPunishmentBtn.addEventListener('click', () => {
+        letgoWrongActions.hidden = true;
+        const selected = punishments[Math.floor(Math.random() * punishments.length)];
+        letgoPunishmentVideo.src = selected;
+        letgoPunishmentVideo.load();
+        letgoPunishmentArea.hidden = false;
+      });
+
+      function advanceToFinish() {
+        clearInterval(letgoTimerId);
+        letgoRewardArea.hidden = true;
+        letgoPunishmentArea.hidden = true;
+        hideLetgoChoices();
+        stopAllMedia();
+        showView(finishPage);
+      }
+
+      letgoSkipBtn.addEventListener('click', advanceToFinish);
+      letgoWrongSkipBtn.addEventListener('click', advanceToFinish);
+      letgoRewardNext.addEventListener('click', advanceToFinish);
+      letgoPunishmentNext.addEventListener('click', advanceToFinish);
+      document.getElementById('letgo-repeat-round').addEventListener('click', () => startLetgoRound());
+      document.getElementById('letgo-reward-close').addEventListener('click', () => {
+        letgoRewardVideo.pause();
+        letgoRewardArea.hidden = true;
+      });
+      letgoRewardArea.addEventListener('click', event => {
+        if (event.target === letgoRewardArea) {
+          letgoRewardVideo.pause();
+          letgoRewardArea.hidden = true;
+        }
+      });
+
+      // ================= GLOBAL NAVIGATION =================
+      startPage2.addEventListener('click', () => showView(page2));
+      backPage1.addEventListener('click', () => showView(page1));
+      continuePage5.addEventListener('click', () => showView(gamePage));
+      playAgain.addEventListener('click', () => showView(page1));
+
+      // Initial View
+      showView(page1);
+    })();
+  </script>
+</body>
+</html>
