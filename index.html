@@ -281,7 +281,6 @@
       <div class="center-card">
         <div class="eyebrow">Warm-up</div>
         <h2 id="visual-title">Get ready to bring the energy!</h2>
-        <p class="small-note">Media</p>
         <video class="presentation-color" id="color-video" src="MEDIA/COLOR.mp4" controls preload="metadata" playsinline></video>
         <div class="button-row"><button type="button" class="secondary" data-go="1">Back</button><button type="button" data-go="3">Continue</button></div>
       </div>
@@ -302,14 +301,17 @@
       <div class="center-card rules-card">
         <div class="eyebrow">How to play</div>
         <h2 id="rules-title">Rules: Guess the Logo with a Twist</h2>
-        <ol>
-          <li>Everyone will be randomly divided into 3 groups using Spin the Wheel.</li>
-          <li>Each group will take turns guessing the logo.</li>
-          <li>If your group guesses correctly, you win a prize!</li>
-          <li>If your group answers incorrectly, you must perform a random dance provided by the facilitators.</li>
-          <li>If no group guesses correctly, we move on to the next logo.</li>
-          <li>Everyone in the group must participate!</li>
-        </ol>
+        <ul>
+          <li>Everyone will be randomly divided into <strong>3 groups</strong> using Spin the Wheel.</li>
+          <li>A logo with a twist will appear on the screen, and all three groups will have <strong>30 seconds</strong> to guess it.</li>
+          <li>Each group that guesses correctly earns <strong>1 point</strong> and does not have to dance.</li>
+          <li>Groups that guess incorrectly must perform the dance shown on the screen.</li>
+          <li>If two groups guess correctly, both earn <strong>1 point</strong>, while the remaining group must dance.</li>
+          <li>If no group answers correctly before the 30-second countdown ends, <strong>all three groups get no points and must perform the same dance</strong>.</li>
+          <li>Only one dance will be selected per round.</li>
+          <li>The game continues until all logos have been shown.</li>
+          <li>The group with the <strong>most points at the end wins the prize!</strong></li>
+        </ul>
         <div class="button-row"><button type="button" class="secondary" data-go="3">Back</button><button type="button" data-go="5">Continue</button></div>
       </div>
     </section>
@@ -386,7 +388,6 @@
     <!-- Page 7: LETGO Logo Challenge Round -->
     <section class="page" data-page="7" aria-labelledby="letgo-title">
       <div class="center-card game-card">
-        <div class="eyebrow">Page 6 · Logo Challenge</div>
         <h2 id="letgo-title">What logo is this?</h2>
         <div class="timer-wrap" id="letgo-timer-wrap" aria-live="assertive">
           <div class="timer-label">Time remaining</div>
@@ -436,7 +437,6 @@
     <!-- Page 8: MR Logo Challenge Round -->
     <section class="page" data-page="8" aria-labelledby="mr-title">
       <div class="center-card game-card">
-        <div class="eyebrow">Page 7 · Logo Challenge</div>
         <h2 id="mr-title">What logo is this?</h2>
         <div class="timer-wrap" id="mr-timer-wrap" aria-live="assertive">
           <div class="timer-label">Time remaining</div>
@@ -629,7 +629,6 @@
       </div>
     </section>
   </main>
-  <div class="progress" id="progress">Page 1 of 18</div>
 
   <script>
     (() => {
